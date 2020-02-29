@@ -7,18 +7,21 @@ const mock = `${extpath}chromeAPIMock.js`;
 
 const baseConfig = (params) => ({
   // devtool: 'source-map',
-  mode: 'production',
+  // mode: 'production',
+  mode: 'development',
   entry: params.input || {
-    background: [ mock, `${extpath}background/index` ],
-    options: [ mock, `${extpath}options/index` ],
-    window: [ `${extpath}window/index` ],
-    remote: [ `${extpath}window/remote` ],
-    devpanel: [ mock, `${extpath}devpanel/index` ],
-    devtools: [ `${extpath}devtools/index` ],
-    content: [ mock, `${extpath}inject/contentScript` ],
-    pagewrap: [ `${extpath}inject/pageScriptWrap` ],
+    cefDevtools: [ `${extpath}cef/devtools` ],
+    cefInject: [ `${extpath}cef/inject` ],
+    // background: [ mock, `${extpath}background/index` ],
+    // options: [ mock, `${extpath}options/index` ],
+    // window: [ `${extpath}window/index` ],
+    // remote: [ `${extpath}window/remote` ],
+    // devpanel: [ mock, `${extpath}devpanel/index` ],
+    // devtools: [ `${extpath}devtools/index` ],
+    // content: [ mock, `${extpath}inject/contentScript` ],
+    // pagewrap: [ `${extpath}inject/pageScriptWrap` ],
     'redux-devtools-extension': [ `${extpath}inject/index`, `${extpath}inject/deprecatedWarn` ],
-    inject: [ `${extpath}inject/index`, `${extpath}inject/deprecatedWarn` ],
+    // inject: [ `${extpath}inject/index`, `${extpath}inject/deprecatedWarn` ],
     ...params.inputExtra
   },
   output: {
@@ -42,7 +45,7 @@ const baseConfig = (params) => ({
             comments: false
           }
         },
-        // sourceMap: true,
+        sourceMap: true,
         cache: true,
         parallel: true
       })
