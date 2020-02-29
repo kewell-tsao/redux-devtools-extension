@@ -19,7 +19,6 @@ let preloadedState;
 const cefPostMessage = (window.CefSharp && typeof (window.CefSharp.PostMessage) === 'function') ?
   window.CefSharp.PostMessage : function() {};
 let bgConnection;
-let tabConnection;
 const connections = [];
 const onConnectListeners = [];
 const onMessageListeners = [];
@@ -43,6 +42,15 @@ chrome.runtime.onMessage = chrome.runtime.onMessage || {
 chrome.runtime.onMessageExternal = chrome.runtime.onMessageExternal || chrome.runtime.onMessage;
 chrome.runtime.onInstalled = chrome.runtime.onInstalled || {
   addListener: cb => cb()
+};
+chrome.runtime.sendMessage = chrome.runtime.sendMessage || function(data) {
+  if (typeof arguments[arguments.length - 1] === 'function') {
+    Array.prototype.pop.call(arguments);
+  }
+  cefPostMessage(JSON.stringify({
+    target: source,
+    message: data
+  }));
 };
 
 window.chrome.runtime.connect = function(options) {
@@ -277,13 +285,9 @@ function renderNA() {
   }, 3500);
 }
 
-function init() {
-  const id = 'devtools-bg';
+function init(id) {
   renderNA();
-
-  tabConnection = chrome.runtime.connect({ name: 'tab' });
-
-  bgConnection = chrome.runtime.connect({ name: id });
+  bgConnection = chrome.runtime.connect({ name: id ? id.toString() : undefined });
   bgConnection.onMessage.addListener(message => {
     if (message.type === 'NA') {
       if (message.id === id) renderNA();
@@ -295,6 +299,4 @@ function init() {
   });
 }
 
-require('./devtools-bg');
-
-init();
+init(chrome.devtools.inspectedWindow.tabId);

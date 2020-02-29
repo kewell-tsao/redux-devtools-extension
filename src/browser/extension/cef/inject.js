@@ -141,6 +141,7 @@ window.CefReduxDevToolsMessageDispatch = function(json) {
   });
 };
 
+window.devToolsExtensionID = 'lmhkpmbekcpmknklioeibfkpmmfibljd';
 require('../inject/contentScript');
 require('../inject/pageScript');
 
@@ -157,3 +158,4 @@ window.devToolsOptions = {
   'useEditor': 0,
   'whitelist': ''
 };
+window.__REDUX_DEVTOOLS_EXTENSION__.notifyErrors();
