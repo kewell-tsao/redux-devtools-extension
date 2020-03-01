@@ -7,3 +7,4 @@ build/
 dev/
 tmp/
 _book
+/package-lock.json

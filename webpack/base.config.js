@@ -10,8 +10,9 @@ const baseConfig = (params) => ({
   // mode: 'production',
   mode: 'development',
   entry: params.input || {
-    cefDevtools: [ `${extpath}cef/devtools` ],
-    cefInject: [ `${extpath}cef/inject` ],
+    background: [ `${extpath}cef/background` ],
+    devtools: [ `${extpath}cef/devtools` ],
+    inject: [ `${extpath}cef/inject` ],
     // background: [ mock, `${extpath}background/index` ],
     // options: [ mock, `${extpath}options/index` ],
     // window: [ `${extpath}window/index` ],
