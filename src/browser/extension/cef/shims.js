@@ -8,7 +8,7 @@ const onMessageListeners = [];
 
 let reduxDevtoolsFrame = null;
 function autoSwitchPostMessage(data) {
-  console.log(window.location.pathname + ':autoSwitchPostMessage:' + JSON.stringify(data));
+  log('<SEND>', data);
   switch (window.ReduxDevToolsCefEnvironment ) {
     case 'background': // 发送到devtools或inject
       if (data.target === 'background') {
@@ -37,6 +37,13 @@ function autoSwitchPostMessage(data) {
   }
 }
 
+const log = window.__REDUX_DEVTOOLS_EXTENSION_LOG_OUTPUT__ ? function(message, json) {
+  console.log(`[${window.location.pathname}] ${message}`);
+  if (json) {
+    console.dir(json);
+  }
+} : function() { };
+
 class CefMessageConnection {
   constructor(extensionId, name) {
     this.extensionId = extensionId;
@@ -52,21 +59,25 @@ class CefMessageConnection {
   }
 
   addOnMessageListener(handler) {
-    console.log('chrome.runtime.connect:addOnMessageListener');
+    log('addOnMessageListener');
     if (handler) {
-      this.onMessageListeners.push(handler);
+      if (this.onMessageListeners.findIndex(h => h === handler) < 0) {
+        this.onMessageListeners.push(handler);
+      }
     }
   }
 
   addOnDisconnectListener(handler) {
-    console.log('chrome.runtime.connect:addOnDisconnectListener');
+    log('addOnDisconnectListener');
     if (handler) {
-      this.onDisconnectListeners.push(handler);
+      if (this.onDisconnectListeners.findIndex(h => h === handler) < 0) {
+        this.onDisconnectListeners.push(handler);
+      }
     }
   }
 
   postMessage(data) {
-    console.log('chrome.runtime.connect:postMessage');
+    log('postMessage');
     autoSwitchPostMessage({
       method: 'postMessage',
       target: this.extensionId || this.name,
@@ -79,7 +90,7 @@ class CefMessageConnection {
   }
 
   disconnect() {
-    console.log('chrome.runtime.connect:disconnect');
+    log('disconnect');
     let index = connections.findIndex(c => c === this);
     if (index >= 0) {
       connections.splice(index, 1);
@@ -100,10 +111,12 @@ class CefMessageConnection {
   }
 
   sendResponse(data) {
+    log('sendResponse');
     this.postMessage(data);
   }
 
   static connect() {
+    log('connect');
     let extensionId;
     let name;
     if (arguments.length > 0) {
@@ -115,6 +128,10 @@ class CefMessageConnection {
       } else if (typeof arguments[0] === 'object') {
         name = arguments[0].name;
       }
+    }
+    let found = connections.filter(c => c.extensionId === extensionId && c.name === name);
+    if (found.length > 0) {
+      return found[0];
     }
     const connection = new CefMessageConnection(extensionId, name);
     connections.push(connection);
@@ -139,13 +156,17 @@ chrome.runtime = chrome.runtime || {};
 chrome.runtime.connect = CefMessageConnection.connect;
 chrome.runtime.onConnect = chrome.runtime.onConnect || {
   addListener(handler) {
-    onConnectListeners.push(handler);
+    if (onConnectListeners.findIndex(h => h === handler) < 0) {
+      onConnectListeners.push(handler);
+    }
   }
 };
 chrome.runtime.onConnectExternal = chrome.runtime.onConnectExternal || chrome.runtime.onConnect;
 chrome.runtime.onMessage = chrome.runtime.onMessage || {
   addListener(handler) {
-    onMessageListeners.push(handler);
+    if (onMessageListeners.findIndex(h => h === handler) < 0) {
+      onMessageListeners.push(handler);
+    }
   }
 };
 chrome.runtime.onMessageExternal = chrome.runtime.onMessageExternal || chrome.runtime.onMessage;
@@ -153,6 +174,7 @@ chrome.runtime.onInstalled = chrome.runtime.onInstalled || {
   addListener: cb => cb()
 };
 chrome.runtime.sendMessage = chrome.runtime.sendMessage || function() {
+  log('sendMessage');
   let extensionId;
   let data;
   if (arguments.length > 0) {
@@ -194,6 +216,11 @@ chrome.contextMenus = chrome.contextMenus || {
     addListener() {
     }
   }
+};
+
+chrome.pageAction = {
+  show: function() { },
+  setIcon: function() { }
 };
 
 chrome.storage = chrome.storage || {};
@@ -246,7 +273,7 @@ window.reduxDevToolsCefMessageDispatch = function(json) {
   } else {
     body = json;
   }
-  console.log(window.location.pathname + ':reduxDevToolsCefMessageDispatch:' + JSON.stringify(body));
+  log('<DISPATCH>', body);
   if (body.method && body.target && body.sender) {
     switch (body.method) {
       case 'postMessage':
@@ -297,11 +324,16 @@ window.reduxDevToolsCefMessageDispatch = function(json) {
         }
         break;
       case 'connect':
-        const connection = new CefMessageConnection(body.connect.extensionId, body.connect.name);
+        let extensionId = body.connect.extensionId;
+        let name = body.connect.name;
+        let found = connections.filter(c => c.extensionId === extensionId && c.name === name);
+        if (found.length > 0) return;
+        const connection = new CefMessageConnection(extensionId, name);
         connection.sender = body.sender;
         connections.push(connection);
         if (onConnectListeners.length > 0) {
-          onConnectListeners.forEach(handler => {
+          for (let i = 0; i < onConnectListeners.length; i++) {
+            let handler = onConnectListeners[i];
             if (handler && typeof handler === 'function') {
               try {
                 handler(connection);
@@ -309,7 +341,7 @@ window.reduxDevToolsCefMessageDispatch = function(json) {
                 console.error(e);
               }
             }
-          });
+          }
         }
         break;
     }
